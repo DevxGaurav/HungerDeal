@@ -17,7 +17,7 @@ app.listen(port, function () {
 });
 
 app.get('/', function (req, res) {
-    res.end("Welcome to HungerDeal. This instance is the HungerDeal API set. Please use our android app to continue.");
+    res.end("Welcome to HungerDeal. This instance is     the HungerDeal API set. Please use our android app to continue.");
 });
 
 app.get('/search', function (req, res) {
@@ -115,7 +115,7 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                                 });
 
                                 driver.findElement(search_item).sendKeys(keyword, webdriver.Key.RETURN).then(function () {      //find keyword
-                                    search_item=webdriver.By.xpath("(//div[@class='jTy8b'])");
+                                    search_item=webdriver.By.xpath("(//div[@class='_2wg_t'])");
                                     driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
                                         resp= driver.findElements(search_item);
                                         findMatches(resp, keyword).then(function (dt) {
@@ -130,25 +130,27 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                                                 result['total_price']="";
                                                 result['code']=0;
                                                 result['info']="Item not found";
+                                                driver.quit();
+                                                resolve(result);
+                                                return;
                                             }
-                                            sleep(2000).then(function () {
-                                                search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
-                                                driver.findElement(search_item).click();    //click add button
-                                                search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
+                                            result['item_name']=max_match_name;
+                                            //search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
+                                            //driver.findElement(search_item).click();    //click add button
+                                            search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
+                                            driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                driver.findElement(search_item).click();    //click checkout
+                                                search_item=webdriver.By.className("_1ds9T");
                                                 driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                    driver.findElement(search_item).click();    //click checkout
-                                                    search_item=webdriver.By.className("_1ds9T");
-                                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                        addQuantity(quantity, 0, driver, search_item).then(function (dt) {
-                                                            result['delivery_fee']=dt['delivery_fee'];
-                                                            result['item_total']=dt['item_total'];
-                                                            result['total_price']=dt['price'];
-                                                            result['code']=1;
-                                                            result['info']="Swiggy scrape successful";
-                                                            //driver.quit();
-                                                            resolve(result);
-                                                        })
-                                                    });
+                                                    addQuantity(quantity, 0, driver, search_item).then(function (dt) {
+                                                        result['delivery_fee']=dt['delivery_fee'];
+                                                        result['item_total']=dt['item_total'];
+                                                        result['total_price']=dt['price'];
+                                                        result['code']=1;
+                                                        result['info']="Swiggy scrape successful";
+                                                        //driver.quit();
+                                                        resolve(result);
+                                                    })
                                                 });
                                             });
                                         });
@@ -215,24 +217,38 @@ let findMatches=function (resp, keyword) {
             let max_match_name="";
             let matches=0;
             let name="";
+            let c=0;
             for (let i=0;i<list.length;i++) {
-                list[i].getText().then(function (text) {
+                list[i].getText().then(function (txt) {
+                    let dp=txt.split("\n");
+                    let text="";
+                    if (dp.length>3) {
+                        text=dp[1];
+                    }else {
+                        text=dp[1];
+                    }
                     text=text.toLowerCase().trim();
                     text= text.replace("+", "");
                     text= text.replace("-", "");
+                    text= text.replace(".", "");
                     name=text;
+                    console.log(text)
                     text=text.split(" ");
                     matches=0;
-                    /*for (let j=0;j<text.length;j++) {
-                        /!*if (keyword.includes(text[j].trim())) {
-                            matches++;
-                        }*!/
-                    }*/
-                    if (keyword.toLowerCase().trim()===name.toLowerCase().trim()) {
+                    
+                    if (keyword.toLowerCase().trim()===name.toLowerCase().trim() && c===0) {
+                        console.log(name);
                         max_matches=matches;
                         max_match_i=i;
                         max_match_name=name;
+                        list[i].findElement(webdriver.By.className("_1RPOp")).click();
                         //console.log("match found: "+ name+" i= "+i);
+                        let result=[];
+                        result['max_match_name']=max_match_name;
+                        result['max_match_i']=max_match_i;
+                        result['max_matches']=max_matches;
+                        c=1;
+                        resolve(result);
                     }
                     /*if (matches>max_matches) {
                         max_matches=matches;
@@ -242,13 +258,6 @@ let findMatches=function (resp, keyword) {
                         console.log(i);
                         console.log(name);
                     }*/
-                    if (i===list.length-1) {
-                        let result=[];
-                        result['max_match_name']=max_match_name;
-                        result['max_match_i']=max_match_i;
-                        result['max_matches']=max_matches;
-                        resolve(result);
-                    }
                 });
             }
         });
