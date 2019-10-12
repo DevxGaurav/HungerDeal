@@ -48,11 +48,11 @@ const Scrape=function (keyword, d_address, restaurant, quantity) {
     return new Promise(function (resolve, reject) {
         let result={};
         //ZomatoScrape(keyword, d_address, restaurant, quantity);
-        SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (res) {
+        /*SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (res) {
             result['swiggy']=res;
             resolve(result);
-        });
-        //UbereatScrape(keyword, d_address, restaurant, quantity);
+        });*/
+        UbereatScrape(keyword, d_address, restaurant, quantity);
     });
 };
 
@@ -115,42 +115,58 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                                 });
 
                                 driver.findElement(search_item).sendKeys(keyword, webdriver.Key.RETURN).then(function () {      //find keyword
-                                    search_item=webdriver.By.xpath("(//div[@class='_2wg_t'])");
-                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                        resp= driver.findElements(search_item);
-                                        findMatches(resp, keyword).then(function (dt) {
-                                            console.log(dt);
-                                            let max_match_name=dt['max_match_name'];
-                                            let max_match_i=dt['max_match_i'];
-                                            let max_matches=dt['max_matches'];
+                                    sleep(1000).then(function () {
+                                        search_item=webdriver.By.xpath("//div[@class='_2wg_t']");
+                                        driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                            resp= driver.findElements(search_item);
+                                            findMatches(resp, keyword).then(function (dt) {
+                                                console.log(dt);
+                                                let max_match_name=dt['max_match_name'];
+                                                let max_match_i=dt['max_match_i'];
+                                                let max_matches=dt['max_matches'];
+                                                let customizable=dt['customizable'];
 
-                                            if (max_match_i===-1) {
-                                                result['delivery_fee']="";
-                                                result['item_total']="";
-                                                result['total_price']="";
-                                                result['code']=0;
-                                                result['info']="Item not found";
-                                                driver.quit();
-                                                resolve(result);
-                                                return;
-                                            }
-                                            result['item_name']=max_match_name;
-                                            //search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
-                                            //driver.findElement(search_item).click();    //click add button
-                                            search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
-                                            driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                driver.findElement(search_item).click();    //click checkout
-                                                search_item=webdriver.By.className("_1ds9T");
+                                                if (max_match_i===-1) {
+                                                    result['delivery_fee']="";
+                                                    result['item_total']="";
+                                                    result['total_price']="";
+                                                    result['code']=0;
+                                                    result['info']="Item not found";
+                                                    driver.quit();
+                                                    resolve(result);
+                                                    return;
+                                                }
+
+                                                result['item_name']=max_match_name;
+                                                result['customizable']=customizable;
+                                                if (customizable===1) {
+                                                    result['delivery_fee']="";
+                                                    result['item_total']="";
+                                                    result['total_price']="";
+                                                    result['code']=2;       //combo pack
+                                                    result['info']="Item is a Combo pack";
+                                                    driver.quit();
+                                                    resolve(result);
+                                                    return;
+                                                }
+                                                //search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
+                                                //driver.findElement(search_item).click();    //click add button
+                                                search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
                                                 driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                    addQuantity(quantity, 0, driver, search_item).then(function (dt) {
-                                                        result['delivery_fee']=dt['delivery_fee'];
-                                                        result['item_total']=dt['item_total'];
-                                                        result['total_price']=dt['price'];
-                                                        result['code']=1;
-                                                        result['info']="Swiggy scrape successful";
-                                                        //driver.quit();
-                                                        resolve(result);
-                                                    })
+                                                    driver.findElement(search_item).click();    //click checkout
+                                                    search_item=webdriver.By.className("_1ds9T");
+                                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                        addQuantity(quantity, 0, driver, search_item).then(function (dt) {
+                                                            result['delivery_fee']=dt['delivery_fee'];
+                                                            result['restaurant_charges']=dt['restaurant_charges'];
+                                                            result['item_total']=dt['item_total'];
+                                                            result['total_price']=dt['price'];
+                                                            result['code']=1;
+                                                            result['info']="Swiggy scrape successful";
+                                                            driver.quit();
+                                                            resolve(result);
+                                                        })
+                                                    });
                                                 });
                                             });
                                         });
@@ -178,12 +194,12 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
                 driver.wait(webdriver.until.elementsLocated(webdriver.By.id('location-enter-address-input'))).then(function () {
                     driver.wait(webdriver.until.elementsLocated(webdriver.By.id("location-enter-address-item-0"))).then(function () {
                         driver.findElement(webdriver.By.id("location-enter-address-item-0")).click();   //click on first location
-                        driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("//button[@class='ba bb bz']"))).then(function () {
-                            driver.findElement(webdriver.By.xpath("//button[@class='ba bb bz']")).click();  //click on search
+                        driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("//button[@class='ao aq ca']"))).then(function () {
+                            driver.findElement(webdriver.By.xpath("//button[@class='ao aq ca']")).click();  //click on search
                             driver.wait(webdriver.until.elementsLocated(webdriver.By.name("userQuery"))).then(function () {
                                 driver.findElement(webdriver.By.name("userQuery")).sendKeys(restaurant, webdriver.Key.RETURN);  //send restaurant name
-                                driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("(//a[@class='ct cu cc'])[1]"))).then(function () {
-                                    driver.findElement(webdriver.By.xpath("(//a[@class='ct cu cc'])[1]")).click();  //click on first restaurant
+                                driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("(//a[@class='at el az'])[1]"))).then(function () {
+                                    driver.findElement(webdriver.By.xpath("(//a[@class='at el az'])[1]")).click();  //click on first restaurant
                                     driver.wait(webdriver.until.elementsLocated(webdriver.By.id('clamped-content-menu_item_title'))).then(function () {
                                         let resp=driver.findElements(webdriver.By.id('clamped-content-menu_item_title'));
                                         findMatches(resp, keyword).then(function (dt) {
@@ -212,7 +228,7 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
 let findMatches=function (resp, keyword) {
     return new Promise(function (resolve, reject) {
         resp.then(function (list) {
-            let max_matches=0;
+            /*let max_matches=0;
             let max_match_i=-1;
             let max_match_name="";
             let matches=0;
@@ -222,21 +238,22 @@ let findMatches=function (resp, keyword) {
                 list[i].getText().then(function (txt) {
                     let dp=txt.split("\n");
                     let text="";
-                    if (dp.length>3) {
+                    /!*if (dp.length>3) {
                         text=dp[1];
                     }else {
                         text=dp[1];
-                    }
+                    }*!/
+                    text=dp[1];
                     text=text.toLowerCase().trim();
                     text= text.replace("+", "");
                     text= text.replace("-", "");
                     text= text.replace(".", "");
                     name=text;
-                    console.log(text)
+                    console.log(text);
                     text=text.split(" ");
                     matches=0;
-                    
-                    if (keyword.toLowerCase().trim()===name.toLowerCase().trim() && c===0) {
+
+                    /!*if (keyword.toLowerCase().trim()===name.toLowerCase().trim() && c===0) {
                         console.log(name);
                         max_matches=matches;
                         max_match_i=i;
@@ -249,17 +266,88 @@ let findMatches=function (resp, keyword) {
                         result['max_matches']=max_matches;
                         c=1;
                         resolve(result);
-                    }
-                    /*if (matches>max_matches) {
+                    }*!/
+                    if (matches>max_matches) {
                         max_matches=matches;
                         max_match_i=i;
                         max_match_name=name;
                         console.log(matches);
                         console.log(i);
                         console.log(name);
-                    }*/
+                    }
                 });
-            }
+            }*/
+            let max_matches=0;
+            let max_match_i=-1;
+            let max_match_name="";
+            let customize=0;
+            let matches=0;
+            list[0].getText().then(function (txt) {
+                console.log(txt);
+                let dp=txt.split("\n");
+                let text="";
+                if (dp[1].trim()==="+") {
+                    customize=1;
+                    text=dp[3];
+                }else {
+                    text=dp[1];
+                }
+                /*if (dp.length>3) {
+                text=dp[1];
+                }else {
+                    text=dp[1];
+                }*/
+                text=text.toLowerCase().trim();
+                text= text.replace("+", "");
+                text= text.replace("-", "");
+                text= text.replace(".", "");
+                text= text.replace("(", "");
+                text= text.replace(")", "");
+                text= text.replace("  ", " ");
+                let name=text;
+                text=text.split(" ");
+                for (let i=0;i<text.length;i++) {
+                    if (keyword.trim().includes(text[i].trim())) {
+                        matches++;
+                    }
+                }
+                keyword=keyword.split(" ");
+                if (keyword.length===1) {
+                    if (matches>=1) {
+                        max_matches=matches;
+                        max_match_i=0;
+                        max_match_name=name;
+                        list[0].findElement(webdriver.By.className("_1RPOp")).click();
+                    }
+                }else if (keyword.length===2) {
+                    if (matches>=2) {
+                        max_matches=matches;
+                        max_match_i=0;
+                        max_match_name=name;
+                        list[0].findElement(webdriver.By.className("_1RPOp")).click();
+                    }
+                }else if (keyword.length===3){
+                    if (matches>=2) {
+                        max_matches=matches;
+                        max_match_i=0;
+                        max_match_name=name;
+                        list[0].findElement(webdriver.By.className("_1RPOp")).click();
+                    }
+                }else {
+                    if (matches>=3) {
+                        max_matches=matches;
+                        max_match_i=0;
+                        max_match_name=name;
+                        list[0].findElement(webdriver.By.className("_1RPOp")).click();
+                    }
+                }
+                let result={};
+                result['max_match_name']=max_match_name;
+                result['max_match_i']=max_match_i;
+                result['max_matches']=max_matches;
+                result['customizable']=customize;
+                resolve(result)
+            });
         });
     });
 };
@@ -274,14 +362,26 @@ let addQuantity=function(quantity, c_quantity, driver, element) {
                 txt.then(function (text) {
                     let result=[];
                     result['price']=text;
-                    txt= driver.findElement(webdriver.By.xpath("(//span[@class='ZH2UW'])[1]")).getText();
-                    txt.then(function (text) {
-                        result['item_total']=text;
-                        txt= driver.findElement(webdriver.By.xpath("(//span[@class='ZH2UW'])[3]")).getText();
-                        txt.then(function (text) {
-                            result['delivery_fee']=text;
-                            resolve(result);
+                    txt= driver.findElements(webdriver.By.xpath("//span[@class='ZH2UW']"));
+                    txt.then(function (list) {
+                        list[0].getText().then(function (text) {
+                            result['item_total']=text;
                         });
+                        if (list.length===3){
+                            list[2].getText().then(function (text) {
+                                result['delivery_fee']=text;
+                                result['restaurant_charges']='0';
+                                resolve(result);
+                            });
+                        }else {
+                            list[3].getText().then(function (text) {
+                                result['restaurant_charges']=text;
+                                list[5].getText().then(function (text) {
+                                    result['delivery_fee']=text;
+                                    resolve(result);
+                                });
+                            });
+                        }
                     });
                 });
             });
