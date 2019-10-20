@@ -5,6 +5,8 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/app.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/debug.log" beforeDir="false" afterPath="$PROJECT_DIR$/debug.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -80,7 +82,24 @@
       <workItem from="1570798198433" duration="42000" />
       <workItem from="1570798272194" duration="9042000" />
       <workItem from="1570856293228" duration="180000" />
-      <workItem from="1570856508845" duration="1126000" />
+      <workItem from="1570856508845" duration="4480000" />
+      <workItem from="1570861126549" duration="58000" />
+      <workItem from="1570861559955" duration="32000" />
+      <workItem from="1570861610690" duration="12814000" />
+      <workItem from="1570892215079" duration="116000" />
+      <workItem from="1570892363598" duration="3121000" />
+      <workItem from="1570947080749" duration="1259000" />
+      <workItem from="1570948976827" duration="20041000" />
+      <workItem from="1571058107572" duration="6457000" />
+      <workItem from="1571117724222" duration="3202000" />
+      <workItem from="1571372285507" duration="26000" />
+      <workItem from="1571372348210" duration="3713000" />
+      <workItem from="1571379261105" duration="27000" />
+      <workItem from="1571379323149" duration="855000" />
+      <workItem from="1571380891272" duration="33000" />
+      <workItem from="1571380947887" duration="4735000" />
+      <workItem from="1571394922002" duration="505000" />
+      <workItem from="1571560315603" duration="2518000" />
     </task>
     <servers />
   </component>

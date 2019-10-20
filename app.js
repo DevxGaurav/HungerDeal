@@ -3,6 +3,8 @@ const bodyParser=require('body-parser');
 const webdriver=require('selenium-webdriver');
 const chrome=require('selenium-webdriver/chrome');
 const chromepath=require('chromedriver').path;
+const firefox=require('selenium-webdriver/firefox');
+const gekodriverpath=require('geckodriver').path;
 const app=express();
 const port=8080;
 
@@ -12,12 +14,15 @@ app.use(bodyParser.urlencoded({extended:true}));
 const service=new chrome.ServiceBuilder(chromepath).build();
 chrome.setDefaultService(service);
 
+new firefox.ServiceBuilder(gekodriverpath).build();
+new firefox.Options(service);
+
 app.listen(port, function () {
     console.log("Listening on port: "+port);
 });
 
 app.get('/', function (req, res) {
-    res.end("Welcome to HungerDeal. This instance is     the HungerDeal API set. Please use our android app to continue.");
+    res.end("Welcome to HungerDeal. This instance is the HungerDeal API set. Please use our android app to continue.");
 });
 
 app.get('/search', function (req, res) {
@@ -25,16 +30,17 @@ app.get('/search', function (req, res) {
     const d_address=req.query.d_address.trim().toLowerCase();
     const restaurant=req.query.restaurant.trim().toLowerCase();
     const quantity=parseInt(req.query.quantity.trim());
+    const city=req.query.city.trim().toLowerCase();
     let response= {};
 
-    if (keyword==="" || d_address==="" || restaurant===""|| quantity===0) {
+    if (keyword==="" || d_address==="" || restaurant===""|| quantity===0 || city==="") {
         response['code']=-1;
         response['info']="Invalid request parameters";
         res.end(JSON.stringify(response));
         return;
     }
 
-    Scrape(keyword, d_address, restaurant, quantity, response).then(function (result) {
+    Scrape(keyword, d_address, restaurant, quantity, response, city, 0, 0).then(function (result) {
         response['code']=1;
         response['info']="Scrape successful";
         response['result']=result;
@@ -44,27 +50,76 @@ app.get('/search', function (req, res) {
 });
 
 
-const Scrape=function (keyword, d_address, restaurant, quantity) {
+const Scrape=function (keyword, d_address, restaurant, quantity, result, city, c, k) {
     return new Promise(function (resolve, reject) {
-        let result={};
-        //ZomatoScrape(keyword, d_address, restaurant, quantity);
-        /*SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (res) {
-            result['swiggy']=res;
+        /*//ZomatoScrape(keyword, d_address, restaurant, quantity);
+        if (c===0) {
+            /!*SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (res) {
+                result['swiggy']=res;
+                k++;
+            });*!/
+            /!*UbereatScrape(keyword, d_address, restaurant, quantity).then(function (res) {
+                result['ubereats']=res;
+                k++;
+            });*!/
+        }
+        if (k===2) {
             resolve(result);
-        });*/
-        UbereatScrape(keyword, d_address, restaurant, quantity);
+        }else {
+            sleep(4000).then(function () {
+                Scrape(keyword, d_address, restaurant, quantity, result, city, 1, k);
+            })
+        }*/
+        ZomatoScrape(keyword, d_address, restaurant, quantity, city).then(function (res) {
+            result['ubereats']=res;
+            k++;
+        });
     });
 };
 
 
-const ZomatoScrape=function (keyword, d_address, restaurant, quantity) {
+const ZomatoScrape=function (keyword, d_address, restaurant, quantity, city) {
     return new Promise(function (resolve, reject) {
         let result={};
         result['code']=0;
         result['info']="Zomato scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
         driver.get("https://www.zomato.com/").then(function () {
-            driver.findElement(webdriver.By.id("location_input")).sendKeys(d_address);
+            let search_item=webdriver.By.xpath("//div[@data-homepage_ui_tracking_element_id='location_input']");
+            sleep(3500).then(function () {
+                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                    driver.findElement(search_item).click();
+                    search_item=webdriver.By.xpath("//input[@id='location_input']");
+                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                        driver.findElement(search_item).sendKeys(city);
+                        search_item=webdriver.By.xpath("(//div[@class='item fontsize4 bb pt5 pb5 hover-bg'])[1]");
+                        driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                            driver.findElement(search_item).click();
+                            sleep(3000).then(function () {
+
+                            });
+                            /*sleep(5000).then(function () {
+                                search_item=webdriver.By.className('location prompt');
+                                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                   driver.findElement(search_item).sendKeys(d_address);
+                                   search_item=webdriver.By.xpath("(//a[@class='result'])[1]");
+                                   driver.findElement(search_item).click();
+                                   search_item=webdriver.By.xpath("//div[@class='ui fluid green fluid button go-location homepage']");
+                                   driver.findElement(search_item).click();
+                                });
+                                /!*search_item=webdriver.By.id('keywords_container');
+                                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                    driver.findElement(search_item).click();
+                                    search_item=webdriver.By.id('keywords_input');
+                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                        driver.findElement(search_item).sendKeys(restaurant, webdriver.Key.RETURN);
+                                    });
+                                });*!/
+                            });*/
+                        });
+                    });
+                });
+            });
         });
     });
 };
@@ -75,7 +130,7 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
         let result= {};
         result['code']=0;
         result['info']="Swiggy scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
         driver.get("https://www.swiggy.com/").then(function () {
             driver.findElement(webdriver.By.id('location')).sendKeys(d_address, webdriver.Key.RETURN);
             let search_item=webdriver.By.xpath("//div[@class='_3lmRa' and @tabindex='2']");
@@ -119,8 +174,8 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                                         search_item=webdriver.By.xpath("//div[@class='_2wg_t']");
                                         driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
                                             resp= driver.findElements(search_item);
-                                            findMatches(resp, keyword).then(function (dt) {
-                                                console.log(dt);
+                                            findSwiggyMatches(resp, keyword).then(function (dt) {
+                                                //console.log(dt);
                                                 let max_match_name=dt['max_match_name'];
                                                 let max_match_i=dt['max_match_i'];
                                                 let max_matches=dt['max_matches'];
@@ -187,28 +242,222 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
         let result= {};
         result['code']=0;
         result['info']="Ubereats scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
         driver.get("https://www.ubereats.com/en-IN/").then(function () {
-            sleep(1000).then(function () {
-                driver.findElement(webdriver.By.id("location-enter-address-input")).sendKeys(d_address);    //send address to location
-                driver.wait(webdriver.until.elementsLocated(webdriver.By.id('location-enter-address-input'))).then(function () {
-                    driver.wait(webdriver.until.elementsLocated(webdriver.By.id("location-enter-address-item-0"))).then(function () {
-                        driver.findElement(webdriver.By.id("location-enter-address-item-0")).click();   //click on first location
-                        driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("//button[@class='ao aq ca']"))).then(function () {
-                            driver.findElement(webdriver.By.xpath("//button[@class='ao aq ca']")).click();  //click on search
-                            driver.wait(webdriver.until.elementsLocated(webdriver.By.name("userQuery"))).then(function () {
-                                driver.findElement(webdriver.By.name("userQuery")).sendKeys(restaurant, webdriver.Key.RETURN);  //send restaurant name
-                                driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("(//a[@class='at el az'])[1]"))).then(function () {
-                                    driver.findElement(webdriver.By.xpath("(//a[@class='at el az'])[1]")).click();  //click on first restaurant
-                                    driver.wait(webdriver.until.elementsLocated(webdriver.By.id('clamped-content-menu_item_title'))).then(function () {
-                                        let resp=driver.findElements(webdriver.By.id('clamped-content-menu_item_title'));
-                                        findMatches(resp, keyword).then(function (dt) {
-                                            console.log(dt);
-                                            let max_match_name=dt['max_match_name'];
-                                            let max_match_i=dt['max_match_i']+1;
-                                            let max_matches=dt['max_matches'];
-                                            driver.wait(webdriver.until.elementsLocated(webdriver.By.xpath("(//a[@class='ba be cu'])["+max_match_i+"]"))).then(function () {
-                                                driver.findElement(webdriver.By.xpath("(//a[@class='ba be cu'])["+max_match_i+"]")).click();
+            sleep(1500).then(function () {
+                let search_term=webdriver.By.id("location-enter-address-input");
+                driver.findElement(search_term).sendKeys(d_address);    //send address to location
+                driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                    search_term=webdriver.By.id("location-enter-address-item-0");
+                    driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                        driver.findElement(search_term).click();   //click on first location
+                        search_term=webdriver.By.xpath("//button[contains(@class, 'ao aq cc') or contains(@class, 'ao aq ca')]");
+                        driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                            driver.findElement(search_term).click();  //click on search
+                            search_term=webdriver.By.name("userQuery");
+                            driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                driver.findElement(search_term).sendKeys(restaurant, webdriver.Key.RETURN);  //send restaurant name
+                                // search_term=webdriver.By.xpath("//a[contains(@class, 'at az') or contains(@class, 'at gc az') or contains(@class, 'at gd az')]");
+                                search_term=webdriver.By.className("at az");
+                                driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                    let resp=driver.findElements(search_term);
+                                    resp.then(function (list) {
+                                        list[0].click();    //click first restaurant
+                                        search_term=webdriver.By.xpath("//a[contains(@class, 'ao b3') or contains(@class, 'ao bn')]");
+                                        driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                            let respi=driver.findElements(search_term);  //list all dishes and click on match
+                                            search_term=webdriver.By.xpath("//h1");
+                                            // [contains(@class, 'b8 b9 ba cr cs ct cu') or contains(@class, 'b4 b5 b6 c0 c1 c2')]
+                                            driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                                resp=driver.findElement(search_term).getText();
+                                                resp.then(function (txt) {
+                                                    result['restaurant']=txt.trim();
+                                                    search_term=webdriver.By.xpath("//div[contains(@class, 'ao er') or contains(@class, 'ao eq')]");
+                                                    driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                                        resp=driver.findElement(search_term).getText();
+                                                        resp.then(function (txt) {
+                                                            txt=txt.split("\n");
+                                                            result['delivery_time']=txt[0].toString();
+                                                            result['rating']=txt[1];
+                                                            search_term=webdriver.By.xpath("//p[contains(@class, 'b4 b5 b6 dw dx b9') or contains(@class, 'b8 b9 ba c6 c7 bd') or contains(@class, 'b4 b5 b6 dx dy b9') or contains(@class, 'b4 b5 b6 dw dx b9')]");
+                                                            driver.wait(webdriver.until.elementsLocated(search_term), 1500).then(function () {
+                                                                driver.findElement(search_term).getText().then(function (txt) {
+                                                                    txt=txt.split("•");
+                                                                    result['outlet']=txt[0].trim().toString();
+                                                                    findUberMatches(respi, keyword).then(function (dt) {
+                                                                        //console.log(dt);
+                                                                        let max_match_name=dt['max_match_name'];
+                                                                        let max_match_i=dt['max_match_i']+1;
+                                                                        let max_matches=dt['max_matches'];
+                                                                        let customizable=dt['customizable'];
+
+                                                                        if (max_match_i===-1) {
+                                                                            result['delivery_fee']="";
+                                                                            result['item_total']="";
+                                                                            result['total_price']="";
+                                                                            result['code']=0;
+                                                                            result['info']="Item not found";
+                                                                            driver.quit();
+                                                                            resolve(result);
+                                                                            return;
+                                                                        }
+
+                                                                        result['item_name']=max_match_name;
+                                                                        result['customizable']=customizable;
+                                                                        search_term=webdriver.By.xpath("//button[contains(@class, 'b4 b5 b6 b7 b8')]");
+                                                                        driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {    //click on add quantity
+                                                                            resp=driver.findElements(search_term);
+                                                                            resp.then(function (list) {
+                                                                                for (let i=1;i<quantity;i++) {
+                                                                                    list[1].click();
+                                                                                }
+                                                                                search_term=webdriver.By.xpath("//button[contains(@class, 'b4 b5 ca b7 b8') or contains(@class, 'b4 b5 by b7 b8')]");
+                                                                                driver.findElement(search_term).click().then(function () {      //click on add to cart
+                                                                                    /*search_term=webdriver.By.xpath("//a[contains(@class, 'ce ao ar aq el gs gt cf') or contains(@href, '/en-IN/checkout/')]");
+                                                                                     driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {     //click in checkout
+                                                                                         driver.findElement(search_term).click();
+                                                                                     });*/
+                                                                                    sleep(2000).then(function () {
+                                                                                        driver.get('https://www.ubereats.com/en-IN/checkout/').then(function () {
+                                                                                            sleep(4000).then(function () {
+                                                                                                search_term=webdriver.By.xpath("(//div[contains(@class, 'am av aw')])[4]");
+                                                                                                driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                                                                                    search_term=webdriver.By.xpath("//div[contains(@class, 'am av aw')]");
+                                                                                                    resp=driver.findElements(search_term);
+                                                                                                    resp.then(function (list) {
+                                                                                                        let temp =[];
+                                                                                                        let pro=new Promise(function (resolve) {
+                                                                                                            for (let i=0; i<list.length;i++) {
+                                                                                                                list[i].getText().then(function (txt) {
+                                                                                                                    //console.log(txt);
+                                                                                                                    txt=txt.split(" ");
+                                                                                                                    if (txt.length>1) {
+                                                                                                                        temp.push(parseFloat(txt[1]));
+                                                                                                                    }
+                                                                                                                    if (i===list.length-1) {
+                                                                                                                        resolve(temp);
+                                                                                                                    }
+                                                                                                                });
+                                                                                                            }
+                                                                                                        });
+                                                                                                        pro.then(function () {
+                                                                                                            console.log(temp);
+                                                                                                            temp.sort();
+                                                                                                            result['item_total']=temp[1].toString();
+                                                                                                            result['delivery_fee']=temp[0].toString();
+                                                                                                            result['restaurant_charges']='0';
+                                                                                                            result['total_price']=temp[2].toString();
+                                                                                                            search_term=webdriver.By.xpath("//div[contains(@class, 'b8 b9 ba bb bc bd ao bu cw') or contains(@class, 'ag ah ai aj ak al am bk c6')]");
+                                                                                                            resp=driver.findElements(search_term);
+                                                                                                            resp.then(function (list) {
+                                                                                                                list[2].getText().then(function (txt) {
+                                                                                                                    result['location']=txt;
+                                                                                                                    result['code']=1;
+                                                                                                                    result['info']="ubereats scrape successful";
+                                                                                                                    driver.quit();
+                                                                                                                    resolve(result);
+                                                                                                                });
+                                                                                                            });
+                                                                                                        });
+                                                                                                    });
+                                                                                                });
+                                                                                            });
+                                                                                        });
+                                                                                    });
+                                                                                });
+                                                                            });
+                                                                        });
+                                                                    });
+                                                                });
+                                                            }).catch(function () {
+                                                                findUberMatches(respi, keyword).then(function (dt) {
+                                                                    //console.log(dt);
+                                                                    let max_match_name=dt['max_match_name'];
+                                                                    let max_match_i=dt['max_match_i']+1;
+                                                                    let max_matches=dt['max_matches'];
+                                                                    let customizable=dt['customizable'];
+
+                                                                    if (max_match_i===-1) {
+                                                                        result['delivery_fee']="";
+                                                                        result['item_total']="";
+                                                                        result['total_price']="";
+                                                                        result['code']=0;
+                                                                        result['info']="Item not found";
+                                                                        driver.quit();
+                                                                        resolve(result);
+                                                                        return;
+                                                                    }
+
+                                                                    result['item_name']=max_match_name;
+                                                                    result['customizable']=customizable;
+                                                                    search_term=webdriver.By.xpath("//button[contains(@class, 'b4 b5 b6 b7 b8')]");
+                                                                    driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {    //click on add quantity
+                                                                        resp=driver.findElements(search_term);
+                                                                        resp.then(function (list) {
+                                                                            for (let i=1;i<quantity;i++) {
+                                                                                list[1].click();
+                                                                            }
+                                                                            search_term=webdriver.By.xpath("//button[contains(@class, 'b4 b5 ca b7 b8') or contains(@class, 'b4 b5 by b7 b8')]");
+                                                                            driver.findElement(search_term).click().then(function () {      //click on add to cart
+                                                                                /*search_term=webdriver.By.xpath("//a[contains(@class, 'ce ao ar aq el gs gt cf') or contains(@href, '/en-IN/checkout/')]");
+                                                                                 driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {     //click in checkout
+                                                                                     driver.findElement(search_term).click();
+                                                                                 });*/
+                                                                                sleep(2000).then(function () {
+                                                                                    driver.get('https://www.ubereats.com/en-IN/checkout/').then(function () {
+                                                                                        sleep(0).then(function () {
+                                                                                            search_term=webdriver.By.xpath("(//div[contains(@class, 'am av aw')])[4]");
+                                                                                            driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
+                                                                                                search_term=webdriver.By.xpath("//div[contains(@class, 'am av aw')]");
+                                                                                                resp=driver.findElements(search_term);
+                                                                                                resp.then(function (list) {
+                                                                                                    let temp =[];
+                                                                                                    let pro=new Promise(function (resolve) {
+                                                                                                        for (let i=0; i<list.length;i++) {
+                                                                                                            list[i].getText().then(function (txt) {
+                                                                                                                //console.log(txt);
+                                                                                                                txt=txt.split(" ");
+                                                                                                                if (txt.length>1) {
+                                                                                                                    temp.push(parseFloat(txt[1]));
+                                                                                                                }
+                                                                                                                if (i===list.length-1) {
+                                                                                                                    resolve(temp);
+                                                                                                                }
+                                                                                                            });
+                                                                                                        }
+                                                                                                    });
+                                                                                                    pro.then(function () {
+                                                                                                        //console.log(temp);
+                                                                                                        temp.sort();
+                                                                                                        result['item_total']=temp[1].toString();
+                                                                                                        result['delivery_fee']=temp[0].toString();
+                                                                                                        result['restaurant_charges']='0';
+                                                                                                        result['total_price']=temp[2].toString();
+                                                                                                        search_term=webdriver.By.xpath("//div[contains(@class, 'b8 b9 ba bb bc bd ao bu cw') or contains(@class, 'ag ah ai aj ak al am bk c6')]");
+                                                                                                        resp=driver.findElements(search_term);
+                                                                                                        resp.then(function (list) {
+                                                                                                            list[2].getText().then(function (txt) {
+                                                                                                                result['location']=txt;
+                                                                                                                result['code']=1;
+                                                                                                                result['info']="ubereats scrape successful";
+                                                                                                                driver.quit();
+                                                                                                                resolve(result);
+                                                                                                            });
+                                                                                                        });
+                                                                                                    });
+                                                                                                });
+                                                                                            });
+                                                                                        });
+                                                                                    });
+                                                                                });
+                                                                            });
+                                                                        });
+                                                                    });
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                });
                                             });
                                         });
                                     });
@@ -225,7 +474,7 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
 };
 
 
-let findMatches=function (resp, keyword) {
+let findSwiggyMatches=function (resp, keyword) {
     return new Promise(function (resolve, reject) {
         resp.then(function (list) {
             /*let max_matches=0;
@@ -283,7 +532,6 @@ let findMatches=function (resp, keyword) {
             let customize=0;
             let matches=0;
             list[0].getText().then(function (txt) {
-                console.log(txt);
                 let dp=txt.split("\n");
                 let text="";
                 if (dp[1].trim()==="+") {
@@ -306,12 +554,8 @@ let findMatches=function (resp, keyword) {
                 text= text.replace("  ", " ");
                 let name=text;
                 text=text.split(" ");
-                for (let i=0;i<text.length;i++) {
-                    if (keyword.trim().includes(text[i].trim())) {
-                        matches++;
-                    }
-                }
                 keyword=keyword.split(" ");
+                matches=include(keyword, text);
                 if (keyword.length===1) {
                     if (matches>=1) {
                         max_matches=matches;
@@ -346,10 +590,78 @@ let findMatches=function (resp, keyword) {
                 result['max_match_i']=max_match_i;
                 result['max_matches']=max_matches;
                 result['customizable']=customize;
-                resolve(result)
+                resolve(result);
             });
         });
     });
+};
+
+
+let findUberMatches =function(resp, keyword) {
+    return new Promise(function (resolve, reject) {
+        resp.then(function (list) {
+            let max_matches=0;
+            let max_match_i=-1;
+            let max_match_name="";
+            let customize=0;
+            let matches=0;
+            for (let i=0;i<list.length;i++) {
+                matches=0;
+                list[i].getText().then(function (txt) {
+                    //console.log(txt);
+                    let dp=txt.split("\n");
+                    let text="";
+                    text=dp[0];
+                    text=text.toLowerCase().trim();
+                    text= text.replace("+", "");
+                    text= text.replace("-", "");
+                    text= text.replace(".", "");
+                    text= text.replace("(", "");
+                    text= text.replace(")", "");
+                    text= text.replace("  ", " ");
+                    let name=text;
+                    // text=text.split(" ");
+                    //console.log(text);
+                    matches=include(keyword.split(" "), text.split(" "));
+                    if (matches===text.split(" ").length) {
+                        max_matches=matches;
+                        max_match_i=i+1;
+                        max_match_name=name;
+                        let result={};
+                        result['max_match_name']=max_match_name;
+                        result['max_match_i']=max_match_i;
+                        result['max_matches']=max_matches;
+                        result['customizable']=customize;
+                        list[i].click().catch(function () {
+                        });
+                        resolve(result);
+                    }
+                    if (i===list.length-1) {
+                        let result={};
+                        result['max_match_name']=max_match_name;
+                        result['max_match_i']=max_match_i;
+                        result['max_matches']=max_matches;
+                        result['customizable']=customize;
+                        resolve(result);
+                    }
+                });
+            }
+        });
+    });
+};
+
+
+let include=function(list1, list2) {
+    let matches=0;
+    for (let i=0;i<list1.length;i++) {
+        for (let j=0;j<list2.length;j++) {
+            if (list1[i].trim()===list2[j].trim()) {
+                matches++;
+                break;
+            }
+        }
+    }
+    return matches;
 };
 
 
