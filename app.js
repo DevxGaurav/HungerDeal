@@ -92,30 +92,52 @@ const ZomatoScrape=function (keyword, d_address, restaurant, quantity, city) {
                     search_item=webdriver.By.xpath("//input[@id='location_input']");
                     driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
                         driver.findElement(search_item).sendKeys(city);
-                        search_item=webdriver.By.xpath("(//div[@class='item fontsize4 bb pt5 pb5 hover-bg'])[1]");
-                        driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                            driver.findElement(search_item).click();
-                            sleep(3000).then(function () {
-
-                            });
-                            /*sleep(5000).then(function () {
-                                search_item=webdriver.By.className('location prompt');
-                                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                   driver.findElement(search_item).sendKeys(d_address);
-                                   search_item=webdriver.By.xpath("(//a[@class='result'])[1]");
-                                   driver.findElement(search_item).click();
-                                   search_item=webdriver.By.xpath("//div[@class='ui fluid green fluid button go-location homepage']");
-                                   driver.findElement(search_item).click();
-                                });
-                                /!*search_item=webdriver.By.id('keywords_container');
-                                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                    driver.findElement(search_item).click();
-                                    search_item=webdriver.By.id('keywords_input');
-                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                        driver.findElement(search_item).sendKeys(restaurant, webdriver.Key.RETURN);
+                        sleep(1500).then(function () {
+                            search_item=webdriver.By.xpath("(//div[@class='item fontsize4 bb pt5 pb5 hover-bg'])[1]");
+                            driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                driver.findElement(search_item).click();
+                                sleep(4000).then(function () {
+                                    driver.getCurrentUrl().then(function (url) {
+                                        url=url+"/order";
+                                        driver.get(url).then(function () {
+                                            sleep(2000).then(function () {
+                                                search_item=webdriver.By.className('location prompt');
+                                                driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                    driver.findElement(search_item).sendKeys(d_address);
+                                                    sleep(3000).then(function () {
+                                                        search_item=webdriver.By.xpath("(//a[@class='result'])[1]");
+                                                        driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                            driver.findElement(search_item).click().then(function () {
+                                                                sleep(1000).then(function () {
+                                                                    search_item=webdriver.By.xpath("//button[@class='ui red large fluid button go-location']");
+                                                                    driver.findElement(search_item).click();
+                                                                    search_item=webdriver.By.xpath("(//input[@class='prompt input_box'])[1]");
+                                                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                                        sleep(1000).then(function () {
+                                                                            driver.findElement(search_item).sendKeys(restaurant, webdriver.Key.RETURN);
+                                                                            sleep(10000).then(function () {
+                                                                               search_item=webdriver.By.className('result-order-flow-title');
+                                                                               driver.findElements(search_item).then(function (list) {
+                                                                                   console.log(list.length);
+                                                                                   for (let i=0;i<list.length;i++){
+                                                                                       list[i].getText().then(function (txt) {
+                                                                                           console.log(txt);
+                                                                                       });
+                                                                                   }
+                                                                               });
+                                                                            });
+                                                                        });
+                                                                    });
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                });
+                                            });
+                                        });
                                     });
-                                });*!/
-                            });*/
+                                });
+                            });
                         });
                     });
                 });
