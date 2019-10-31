@@ -31,9 +31,16 @@ app.get('/', function (req, res) {
 app.get('/app/api/home', function (req, res) {
     let result= {};
     connectDb().then(function (client) {
-        result['code']=1;
-        result['info']="Connected";
-        res.end(JSON.stringify(result))
+        Home(client).then(function (resp) {
+            result['code']=1;
+            result['info']="Success";
+            result['data']=resp;
+            res.end(JSON.stringify(result));
+        }).catch(function (err) {
+            result['code']=-1;
+            result['info']="Unable to connect to Database";
+            res.end(JSON.stringify(result));
+        });
     }).catch(function (err) {
         result['code']=0;
         result['info']="Unable to connect to Database";
@@ -65,6 +72,43 @@ app.get('/app/api/search', function (req, res) {
     });
     //res.end("[]");
 });
+
+
+const Home=function (client) {
+    return new Promise(function (resolve, reject) {
+        let response =[];
+        client.db("HungerDeal").collection("Meals").find().toArray().then(function (obj) {
+            obj=JSON.stringify(obj);
+            obj=JSON.parse(obj);
+            client.db('HungerDeal').collection("Restaurants").find().toArray().then(function (obj2) {
+                obj2=JSON.stringify(obj2);
+                obj2=JSON.parse(obj2);
+                for (let i=0;i<obj.length;i++) {
+                    let result= {};
+                    result['meal_id']=obj[i].meal_id;
+                    result['meal_name']=obj[i].meal_name;
+                    result['meal_price']=obj[i].meal_price;
+                    result['cuisine']=obj[i].cuisine;
+                    result['veg']=obj[i].veg;
+                    result['healthy']=obj[i].healthy;
+                    result['picture_url']=obj[i].url;
+                    result['restaurant_name']=obj2[parseInt(obj[i].restaurant_id)-1].restaurant_name;
+                    result['restaurant_stars']=obj2[parseInt(obj[i].restaurant_id)-1].restaurant_stars;
+                    result['restaurant_url']=obj2[parseInt(obj[i].restaurant_id)-1].image_url;
+                    result['location']=obj2[parseInt(obj[i].restaurant_id)-1].location;
+                    response.push(result);
+                }
+                resolve(response);
+            }).catch(function (err) {
+                console.log(err);
+                reject(err);
+            })
+        }).catch(function (err) {
+            console.log(err);
+            reject(err);
+        });
+    });
+};
 
 
 const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
