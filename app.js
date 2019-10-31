@@ -7,7 +7,7 @@ const firefox=require('selenium-webdriver/firefox');
 const gekodriverpath=require('geckodriver').path;
 const MongoClient=require('mongodb').MongoClient;
 const app=express();
-const port=2356;
+const port=8080;
 
 //nuxsss5NDJ
 //OibMgwrDQt
@@ -20,7 +20,7 @@ chrome.setDefaultService(service);
 new firefox.ServiceBuilder(gekodriverpath).build();
 new firefox.Options(service);
 
-app.listen(port, function () {
+app.listen(process.env.PORT || port, function () {
     console.log("Listening on port: "+port);
 });
 
