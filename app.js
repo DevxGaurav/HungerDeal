@@ -7,7 +7,7 @@ const firefox=require('selenium-webdriver/firefox');
 const gekodriverpath=require('geckodriver').path;
 const MongoClient=require('mongodb').MongoClient;
 const app=express();
-const port=8080;
+const port=80;
 
 //nuxsss5NDJ
 //OibMgwrDQt
