@@ -66,7 +66,7 @@ app.post('/app/api/search', function (req, res) {
     Scrape(keyword, d_address, restaurant, quantity, city, 0, 0).then(function (result) {
         response['code']=1;
         response['info']="Scrape successful";
-        response['result']=result;
+        response['data']=result;
         console.log(response);
         res.end(JSON.stringify(response));
     });
@@ -113,19 +113,27 @@ const Home=function (client) {
 
 const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
     return new Promise(function (resolve, reject) {
+        let promises= [];
         let result= {};
-        /*SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (res) {
-            result['swiggy']=res;
-            console.log(result);
-            resolve(result);
-            k++;
-        });*/
-        UbereatScrape(keyword, d_address, restaurant, quantity, city).then(function (res) {
-            result['ubereats']=res;
-            resolve['result']=result;
-            console.log(result);
-            k++;
-        });
+        let uber=UbereatScrape(keyword, d_address, restaurant, quantity, city);
+        promises.push(uber);
+        let swiggy=SwiggyScrape(keyword, d_address, restaurant, quantity);
+        promises.push(swiggy);
+        // let zomato=ZomatoScrape(keyword, d_address, restaurant, quantity, city);
+        // promises.push(zomato);
+        Promise.all(promises).then(function() {
+            uber.then(function (res) {
+                result['ubereats']=res;
+                swiggy.then(function (res) {
+                    result['swiggy']=res;
+                    // zomato.then(function (res) {
+                    //     result['zomato']=res;
+                    //     resolve(result);
+                    // });
+                    resolve(JSON.stringify(result));
+                });
+            });
+        });        
     });
 };
 
