@@ -28,7 +28,7 @@ app.get('/', function (req, res) {
     res.end("Welcome to HungerDeal. This instance is the HungerDeal API set. Please use our android app to continue.");
 });
 
-app.get('/app/api/home', function (req, res) {
+app.post('/app/api/home', function (req, res) {
     let result= {};
     connectDb().then(function (client) {
         Home(client).then(function (resp) {
@@ -48,12 +48,12 @@ app.get('/app/api/home', function (req, res) {
     });
 });
 
-app.get('/app/api/search', function (req, res) {
-    const keyword=req.query.keyword.trim().toLowerCase();
-    const d_address=req.query.d_address.trim().toLowerCase();
-    const restaurant=req.query.restaurant.trim().toLowerCase();
-    const quantity=parseInt(req.query.quantity.trim());
-    const city=req.query.city.trim().toLowerCase();
+app.post('/app/api/search', function (req, res) {
+    const keyword=req.body.keyword.trim().toLowerCase();
+    const d_address=req.body.d_address.trim().toLowerCase();
+    const restaurant=req.body.restaurant.trim().toLowerCase();
+    const quantity=parseInt(req.body.quantity.trim());
+    const city=req.body.city.trim().toLowerCase();
     let response= {};
 
     if (keyword==="" || d_address==="" || restaurant===""|| quantity===0 || city==="") {
