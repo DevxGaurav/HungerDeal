@@ -130,7 +130,7 @@ const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
                     //     result['zomato']=res;
                     //     resolve(result);
                     // });
-                    resolve(JSON.stringify(result));
+                    resolve(result);
                 });
             });
         });        
