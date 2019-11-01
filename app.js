@@ -258,6 +258,9 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                                 resp.then(function (text) {
                                     text=text.split('|');
                                     result['outlet']=text[0].trim();
+                                    driver.getCurrentUrl().then(function(url) {
+                                        result['url']=url.toString();
+                                    });
                                 });
                                 resp= driver.findElement(webdriver.By.xpath("(//div[@class='_2l3H5'])[1]")).getText();
                                 resp.then(function (text) {
@@ -366,6 +369,9 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
                                         driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
                                             let respi=driver.findElements(search_term);  //list all dishes and click on match
                                             search_term=webdriver.By.xpath("//h1");
+                                            driver.getCurrentUrl().then(function(url) {
+                                                result['url']=url;
+                                            });
                                             // [contains(@class, 'b8 b9 ba cr cs ct cu') or contains(@class, 'b4 b5 b6 c0 c1 c2')]
                                             driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
                                                 resp=driver.findElement(search_term).getText();
