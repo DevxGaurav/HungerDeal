@@ -73,7 +73,7 @@ app.post('/app/api/search', function (req, res) {
             res.end(JSON.stringify(response));
         });
     }else if (r==="swiggy") {
-        SwiggyScrape(keyword, d_address, restaurant, quantity, city).then(function (result) {
+        SwiggyScrape(keyword, d_address, restaurant, quantity).then(function (result) {
             response['code']=1;
             response['info']="Scrape successful";
             response['data']=result;
@@ -81,7 +81,7 @@ app.post('/app/api/search', function (req, res) {
             res.end(JSON.stringify(response));
         });
     }else if(r==="ubereats") {
-        UbereatScrape(keyword, d_address, restaurant, quantity, city).then(function (result) {
+        UbereatScrape(keyword, d_address, restaurant, quantity).then(function (result) {
             response['code']=1;
             response['info']="Scrape successful";
             response['data']=result;
