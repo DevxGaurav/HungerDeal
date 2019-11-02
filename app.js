@@ -7,7 +7,7 @@ const firefox=require('selenium-webdriver/firefox');
 const gekodriverpath=require('geckodriver').path;
 const MongoClient=require('mongodb').MongoClient;
 const app=express();
-const port=8080;
+const port=80;
 
 //nuxsss5NDJ
 //OibMgwrDQt
@@ -54,23 +54,45 @@ app.post('/app/api/search', function (req, res) {
     const restaurant=req.body.restaurant.trim().toLowerCase();
     const quantity=parseInt(req.body.quantity.trim());
     const city=req.body.city.trim().toLowerCase();
+    const r=req.body.r.trim().toLowerCase();
     let response= {};
 
-    if (keyword==="" || d_address==="" || restaurant===""|| quantity===0 || city==="") {
+    if (keyword==="" || d_address==="" || restaurant===""|| quantity===0 || city==="" || r==="") {
         response['code']=-1;
         response['info']="Invalid request parameters";
         res.end(JSON.stringify(response));
         return;
     }
 
-    Scrape(keyword, d_address, restaurant, quantity, city, 0, 0).then(function (result) {
-        response['code']=1;
-        response['info']="Scrape successful";
-        response['data']=result;
-        console.log(response);
+    if (r==="zomato") {
+        ZomatoScrape(keyword, d_address, restaurant, quantity, city).then(function (result) {
+            response['code']=1;
+            response['info']="Scrape successful";
+            response['data']=result;
+            console.log(response);
+            res.end(JSON.stringify(response));
+        });
+    }else if (r==="swiggy") {
+        SwiggyScrape(keyword, d_address, restaurant, quantity, city).then(function (result) {
+            response['code']=1;
+            response['info']="Scrape successful";
+            response['data']=result;
+            console.log(response);
+            res.end(JSON.stringify(response));
+        });
+    }else if(r==="ubereats") {
+        UbereatScrape(keyword, d_address, restaurant, quantity, city).then(function (result) {
+            response['code']=1;
+            response['info']="Scrape successful";
+            response['data']=result;
+            console.log(response);
+            res.end(JSON.stringify(response));
+        });
+    }else {
+        response['code']=-4;
+        response['info']="invalid r parameter";
         res.end(JSON.stringify(response));
-    });
-    //res.end("[]");
+    }
 });
 
 
@@ -111,7 +133,7 @@ const Home=function (client) {
 };
 
 
-const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
+/*const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
     return new Promise(function (resolve, reject) {
         let promises= [];
         let result= {};
@@ -133,9 +155,9 @@ const Scrape=function (keyword, d_address, restaurant, quantity, city, c, k) {
                     resolve(result);
                 });
             });
-        });        
+        });
     });
-};
+};*/
 
 
 const ZomatoScrape=function (keyword, d_address, restaurant, quantity, city) {
