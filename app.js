@@ -32,11 +32,13 @@ app.post('/app/api/home', function (req, res) {
     let result= {};
     connectDb().then(function (client) {
         Home(client).then(function (resp) {
+            client.close();
             result['code']=1;
             result['info']="Success";
             result['data']=resp;
             res.end(JSON.stringify(result));
         }).catch(function (err) {
+            client.close();
             result['code']=-1;
             result['info']="Unable to connect to Database";
             res.end(JSON.stringify(result));
@@ -69,6 +71,13 @@ app.post('/app/api/search', function (req, res) {
             response['code']=1;
             response['info']="Scrape successful";
             response['data']=result;
+            /*connectDb().then(function (client) {
+                client.db('HungerDeal').collection('Menus').findOne({meal_name: result['meal_name']}).then(function (resp) {
+                    console.log(resp);
+                }).catch(function (err) {
+                   console.log(err);
+                });
+            });*/
             console.log(response);
             res.end(JSON.stringify(response));
         });
@@ -77,6 +86,13 @@ app.post('/app/api/search', function (req, res) {
             response['code']=1;
             response['info']="Scrape successful";
             response['data']=result;
+            connectDb().then(function (client) {
+                client.db('HungerDeal').collection('Menus').findOne({meal_name: result['meal_name']}).then(function (resp) {
+                    console.log(resp);
+                }).catch(function (err) {
+                   console.log(err);
+                });
+            });
             console.log(response);
             res.end(JSON.stringify(response));
         });
@@ -85,6 +101,13 @@ app.post('/app/api/search', function (req, res) {
             response['code']=1;
             response['info']="Scrape successful";
             response['data']=result;
+            /*connectDb().then(function (client) {
+                client.db('HungerDeal').collection('Menus').findOne({meal_name: result['meal_name']}).then(function (resp) {
+                    console.log(resp);
+                }).catch(function (err) {
+                   console.log(err);
+                });
+            });*/
             console.log(response);
             res.end(JSON.stringify(response));
         });
@@ -165,7 +188,7 @@ const ZomatoScrape=function (keyword, d_address, restaurant, quantity, city) {
         let result={};
         result['code']=0;
         result['info']="Zomato scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
         driver.get("https://www.zomato.com/").then(function () {
             let search_item=webdriver.By.xpath("//div[@data-homepage_ui_tracking_element_id='location_input']");
             sleep(3500).then(function () {
@@ -251,101 +274,101 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
         let result= {};
         result['code']=0;
         result['info']="Swiggy scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
-        driver.get("https://www.swiggy.com/").then(function () {
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
+        driver.get("https://www.swiggy.com/");
+        sleep(2000).then(function() {
             driver.findElement(webdriver.By.id('location')).sendKeys(d_address, webdriver.Key.RETURN);
-            let search_item=webdriver.By.xpath("//div[@class='_3lmRa' and @tabindex='2']");
+        let search_item=webdriver.By.xpath("//div[@class='_3lmRa' and @tabindex='2']");
+        driver.wait(webdriver.until.elementLocated(search_item)).then(function () {
+            let resp= driver.findElement(webdriver.By.xpath("(//span[@class='_2W-T9'])[1]")).getText();
+            resp.then(function (text) {
+                result['location']=text;
+            });
+            driver.findElement(search_item).click();    //click on main location search
+            search_item=webdriver.By.xpath("//a[@class='_1T-E4' and @href='/search']");
             driver.wait(webdriver.until.elementLocated(search_item)).then(function () {
-                let resp= driver.findElement(webdriver.By.xpath("(//span[@class='_2W-T9'])[1]")).getText();
-                resp.then(function (text) {
-                    result['location']=text;
-                });
-                driver.findElement(search_item).click();    //click on main location search
-                search_item=webdriver.By.xpath("//a[@class='_1T-E4' and @href='/search']");
+                driver.findElement(search_item).click();    //click on search button
+                search_item=webdriver.By.className('_2BJMh');
                 driver.wait(webdriver.until.elementLocated(search_item)).then(function () {
-                    driver.findElement(search_item).click();    //click on search button
-                    search_item=webdriver.By.className('_2BJMh');
-                    driver.wait(webdriver.until.elementLocated(search_item)).then(function () {
-                        driver.findElement(search_item).sendKeys(restaurant, webdriver.Key.RETURN);    //search item and press enter
-                        search_item=webdriver.By.xpath("(//a[@class='_1j_Yo'])[1]");
+                    driver.findElement(search_item).sendKeys(restaurant, webdriver.Key.RETURN);    //search item and press enter
+                    search_item=webdriver.By.xpath("(//a[@class='_1j_Yo'])[1]");
+                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                        driver.findElement(search_item).click();    //pick first item on search
+                        search_item=webdriver.By.className("_5mXmk");
                         driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                            driver.findElement(search_item).click();    //pick first item on search
-                            search_item=webdriver.By.className("_5mXmk");
-                            driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                resp= driver.findElement(webdriver.By.className("_3aqeL")).getText();
-                                resp.then(function (text) {
-                                    result['restaurant']=text;
+                            resp= driver.findElement(webdriver.By.className("_3aqeL")).getText();
+                            resp.then(function (text) {
+                                result['restaurant']=text;
+                            });
+                            resp= driver.findElement(webdriver.By.className("Gf2NS")).getText();
+                            resp.then(function (text) {
+                                text=text.split('|');
+                                result['outlet']=text[0].trim();
+                                driver.getCurrentUrl().then(function(url) {
+                                    result['url']=url.toString();
                                 });
-                                resp= driver.findElement(webdriver.By.className("Gf2NS")).getText();
-                                resp.then(function (text) {
-                                    text=text.split('|');
-                                    result['outlet']=text[0].trim();
-                                    driver.getCurrentUrl().then(function(url) {
-                                        result['url']=url.toString();
-                                    });
-                                });
-                                resp= driver.findElement(webdriver.By.xpath("(//div[@class='_2l3H5'])[1]")).getText();
-                                resp.then(function (text) {
-                                    result['rating']=text;
-                                });
-                                resp= driver.findElement(webdriver.By.xpath("(//div[@class='_2l3H5'])[2]")).getText();
-                                resp.then(function (text) {
-                                    result['delivery_time']=text;
-                                });
+                            });
+                            resp= driver.findElement(webdriver.By.xpath("(//div[@class='_2l3H5'])[1]")).getText();
+                            resp.then(function (text) {
+                                result['rating']=text;
+                            });
+                            resp= driver.findElement(webdriver.By.xpath("(//div[@class='_2l3H5'])[2]")).getText();
+                            resp.then(function (text) {
+                                result['delivery_time']=text;
+                            });
 
-                                driver.findElement(search_item).sendKeys(keyword, webdriver.Key.RETURN).then(function () {      //find keyword
-                                    sleep(1000).then(function () {
-                                        search_item=webdriver.By.xpath("//div[@class='_2wg_t']");
-                                        driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                            resp= driver.findElements(search_item);
-                                            findSwiggyMatches(resp, keyword).then(function (dt) {
-                                                //console.log(dt);
-                                                let max_match_name=dt['max_match_name'];
-                                                let max_match_i=dt['max_match_i'];
-                                                let max_matches=dt['max_matches'];
-                                                let customizable=dt['customizable'];
+                            driver.findElement(search_item).sendKeys(keyword, webdriver.Key.RETURN).then(function () {      //find keyword
+                                sleep(1000).then(function () {
+                                    search_item=webdriver.By.xpath("//div[@class='_2wg_t']");
+                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                        resp= driver.findElements(search_item);
+                                        findSwiggyMatches(resp, keyword).then(function (dt) {
+                                            //console.log(dt);
+                                            let max_match_name=dt['max_match_name'];
+                                            let max_match_i=dt['max_match_i'];
+                                            let max_matches=dt['max_matches'];
+                                            let customizable=dt['customizable'];
 
-                                                if (max_match_i===-1) {
-                                                    result['delivery_fee']="";
-                                                    result['item_total']="";
-                                                    result['total_price']="";
-                                                    result['code']=0;
-                                                    result['info']="Item not found";
-                                                    driver.quit();
-                                                    resolve(result);
-                                                    return;
-                                                }
+                                            if (max_match_i===-1) {
+                                                result['delivery_fee']="";
+                                                result['item_total']="";
+                                                result['total_price']="";
+                                                result['code']=0;
+                                                result['info']="Item not found";
+                                                driver.quit();
+                                                resolve(result);
+                                                return;
+                                            }
 
-                                                result['item_name']=max_match_name;
-                                                result['customizable']=customizable;
-                                                if (customizable===1) {
-                                                    result['delivery_fee']="";
-                                                    result['item_total']="";
-                                                    result['total_price']="";
-                                                    result['code']=2;       //combo pack
-                                                    result['info']="Item is a Combo pack";
-                                                    driver.quit();
-                                                    resolve(result);
-                                                    return;
-                                                }
-                                                //search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
-                                                //driver.findElement(search_item).click();    //click add button
-                                                search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
+                                            result['item_name']=max_match_name;
+                                            result['customizable']=customizable;
+                                            if (customizable===1) {
+                                                result['delivery_fee']="";
+                                                result['item_total']="";
+                                                result['total_price']="";
+                                                result['code']=2;       //combo pack
+                                                result['info']="Item is a Combo pack";
+                                                driver.quit();
+                                                resolve(result);
+                                                return;
+                                            }
+                                            //search_item=webdriver.By.xpath("(//div[@class='_1RPOp'])["+max_match_i+"]");
+                                            //driver.findElement(search_item).click();    //click add button
+                                            search_item=webdriver.By.xpath("//div[@class='_1gPB7']");
+                                            driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
+                                                driver.findElement(search_item).click();    //click checkout
+                                                search_item=webdriver.By.className("_1ds9T");
                                                 driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                    driver.findElement(search_item).click();    //click checkout
-                                                    search_item=webdriver.By.className("_1ds9T");
-                                                    driver.wait(webdriver.until.elementsLocated(search_item)).then(function () {
-                                                        addQuantity(quantity, 0, driver, search_item).then(function (dt) {
-                                                            result['delivery_fee']=dt['delivery_fee'];
-                                                            result['restaurant_charges']=dt['restaurant_charges'];
-                                                            result['item_total']=dt['item_total'];
-                                                            result['total_price']=dt['price'];
-                                                            result['code']=1;
-                                                            result['info']="Swiggy scrape successful";
-                                                            driver.quit();
-                                                            resolve(result);
-                                                        })
-                                                    });
+                                                    addQuantity(quantity, 0, driver, search_item).then(function (dt) {
+                                                        result['delivery_fee']=dt['delivery_fee'];
+                                                        result['restaurant_charges']=dt['restaurant_charges'];
+                                                        result['item_total']=dt['item_total'];
+                                                        result['total_price']=dt['price'];
+                                                        result['code']=1;
+                                                        result['info']="Swiggy scrape successful";
+                                                        driver.quit();
+                                                        resolve(result);
+                                                    })
                                                 });
                                             });
                                         });
@@ -357,6 +380,7 @@ const SwiggyScrape=function (keyword, d_address, restaurant, quantity) {
                 });
             });
         });
+        });
     });
 };
 
@@ -366,9 +390,9 @@ const UbereatScrape=function (keyword, d_address, restaurant, quantity) {
         let result= {};
         result['code']=0;
         result['info']="Ubereats scrape failed";
-        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.firefox()).build();
+        let driver=new webdriver.Builder().withCapabilities(webdriver.Capabilities.chrome()).build();
         driver.get("https://www.ubereats.com/en-IN/").then(function () {
-            sleep(1500).then(function () {
+            sleep(2000).then(function () {
                 let search_term=webdriver.By.id("location-enter-address-input");
                 driver.findElement(search_term).sendKeys(d_address);    //send address to location
                 driver.wait(webdriver.until.elementsLocated(search_term)).then(function () {
