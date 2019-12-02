@@ -50,6 +50,77 @@ app.post('/app/api/home', function (req, res) {
     });
 });
 
+
+app.post("/app/api/searchcoded", function (req, res) {
+    const keyword=req.body.keyword.trim().toLowerCase();
+    const d_address=req.body.d_address.trim().toLowerCase();
+    const restaurant=req.body.restaurant.trim().toLowerCase();
+    const quantity=parseInt(req.body.quantity.trim());
+    const city=req.body.city.trim().toLowerCase();
+    const r=req.body.r.trim().toLowerCase();
+    let result= {};
+
+    if (keyword==="" || d_address==="" || restaurant===""|| quantity===0 || city==="" || r==="") {
+        response['code']=-1;
+        response['info']="Invalid request parameters";
+        res.end(JSON.stringify(response));
+        return;
+    }
+
+    coded(keyword, d_address, restaurant, quantity, city).then(function (response) {
+        result['code']=1;
+        result['info']="scrape successful";
+        result['result']=response;
+        res.end(JSON.stringify(result));
+    }).catch(function (err) {
+        result['code']=0;
+        result['info']="scrape failed";
+        res.end(JSON.stringify(result));
+    });
+});
+
+const coded=function(keyword, d_address, restaurant, quantity, city) {
+    return new Promise(function (resolve, reject) {
+        connectDb().then(function (client) {
+            let response = [];
+            //collection('Menus').findOne({meal_name: result['meal_name']}).then(function (resp)
+            client.db("HungerDeal").collection("Meals").findOne({"meal_name": {$regex: new RegExp(keyword, "i")}}).then(function (obj) {
+                obj=JSON.stringify(obj);
+                obj=JSON.parse(obj);
+                console.log(obj.restaurant_id);
+                client.db('HungerDeal').collection("Restaurants").findOne({"restaurant_id": obj.restaurant_id}).then(function (obj2) {
+                    let result= {};
+                    result['meal_id']=obj.meal_id;
+                    result['meal_name']=obj.meal_name;
+                    result['meal_price']=obj.meal_price;
+                    result['cuisine']=obj.cuisine;
+                    result['veg']=obj.veg;
+                    result['healthy']=obj.healthy;
+                    result['picture_url']=obj.url;
+                    result['swiggy_price']=parseInt(obj.swiggy_price)*quantity;
+                    result['zomato_price']=parseInt(obj.zomato_price)*quantity;
+                    result['uber_price']=parseInt(obj.uber_price)*quantity;
+                    result['swiggy_time']=obj.swiggy_time;
+                    result['zomato_time']=obj.zomato_price;
+                    result['uber_time']=obj.uber_time;
+                    result['restaurant_name']=obj2.restaurant_name;
+                    result['restaurant_stars']=obj2.restaurant_stars;
+                    result['restaurant_url']=obj2.image_url;
+                    result['location']=obj2.location;
+                    response.push(result);
+                    resolve(response);
+                }).catch(function (err) {
+                    console.log(err);
+                    reject(err);
+                });
+            }).catch(function (err) {
+                console.log(err);
+                reject(err);
+            });
+        })
+    });
+};
+
 app.post('/app/api/search', function (req, res) {
     const keyword=req.body.keyword.trim().toLowerCase();
     const d_address=req.body.d_address.trim().toLowerCase();
@@ -147,7 +218,7 @@ const Home=function (client) {
             }).catch(function (err) {
                 console.log(err);
                 reject(err);
-            })
+            });
         }).catch(function (err) {
             console.log(err);
             reject(err);
