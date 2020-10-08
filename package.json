@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "latest",
-    "chromedriver": "^77.0.0",
+    "chromedriver": "^85.0.1",
     "express": "^4.17.1",
     "geckodriver": "^1.18.0",
     "mongodb": "^3.3.3",
